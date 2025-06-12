@@ -39,6 +39,28 @@
     table {
       margin-top: 10px;
     }
+    .term-info {
+      cursor: help;
+      color: #007bff;
+      margin-left: 5px;
+    }
+    .term-modal .modal-body {
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .term-formula {
+      background-color: #f8f9fa;
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+      font-family: monospace;
+    }
+    .term-interpretation {
+      background-color: #e9ecef;
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+    }
   </style>
 </head>
 <body>
@@ -112,24 +134,107 @@
     </div>
   </div>
 
+  <!-- Add Modal for Term Details -->
+  <div class="modal fade" id="termModal" tabindex="-1" aria-labelledby="termModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="termModalLabel">Term Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <h4 id="termName"></h4>
+          <p id="termDefinition"></p>
+          <div class="term-formula">
+            <strong>Formula:</strong>
+            <p id="termFormula"></p>
+          </div>
+          <div class="term-interpretation">
+            <strong>Interpretation:</strong>
+            <p id="termInterpretation"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Bootstrap JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    let financialTerms = {};
+
+    function showTermDetails(termKey) {
+      const term = financialTerms[termKey];
+      if (term) {
+        document.getElementById('termName').textContent = term.term;
+        document.getElementById('termDefinition').textContent = term.definition;
+        document.getElementById('termFormula').textContent = term.formula;
+        document.getElementById('termInterpretation').textContent = term.interpretation;
+        new bootstrap.Modal(document.getElementById('termModal')).show();
+      }
+    }
+
+    function createTermInfoButton(termKey) {
+      return `<span class="term-info" onclick="showTermDetails('${termKey}')" title="Click for more info">ⓘ</span>`;
+    }
+
     // Function to format portfolio statistics into HTML tables
     function formatPortfolioStats(stats) {
       let html = '<h5>Portfolio Statistics</h5>';
       html += '<table class="table table-bordered table-striped">';
       html += '<thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
-      html += `<tr><td>Expected Daily Return</td><td>${(stats.expected_daily_return * 100).toFixed(2)}%</td></tr>`;
-      html += `<tr><td>Daily Volatility</td><td>${(stats.volatility_daily * 100).toFixed(2)}%</td></tr>`;
-      html += `<tr><td>Expected Annual Return</td><td>${(stats.expected_annual_return * 100).toFixed(2)}%</td></tr>`;
-      html += `<tr><td>Annual Volatility</td><td>${(stats.annual_volatility * 100).toFixed(2)}%</td></tr>`;
-      html += `<tr><td>Diversification Ratio</td><td>${stats.diversification_ratio}</td></tr>`;
+      html += `<tr><td>Expected Daily Return${createTermInfoButton('expected_daily_return')}</td><td>${(stats.expected_daily_return * 100).toFixed(2)}%</td></tr>`;
+      html += `<tr><td>Daily Volatility${createTermInfoButton('volatility_daily')}</td><td>${(stats.volatility_daily * 100).toFixed(2)}%</td></tr>`;
+      html += `<tr><td>Expected Annual Return${createTermInfoButton('expected_annual_return')}</td><td>${(stats.expected_annual_return * 100).toFixed(2)}%</td></tr>`;
+      html += `<tr><td>Annual Volatility${createTermInfoButton('annual_volatility')}</td><td>${(stats.annual_volatility * 100).toFixed(2)}%</td></tr>`;
+      html += `<tr><td>Diversification Ratio${createTermInfoButton('diversification_ratio')}</td><td>${stats.diversification_ratio.toFixed(4)}</td></tr>`;
+      
+      // Risk Metrics
+      if (stats.sharpe_ratio !== undefined) {
+        html += `<tr><td>Sharpe Ratio${createTermInfoButton('sharpe_ratio')}</td><td>${stats.sharpe_ratio.toFixed(2)}</td></tr>`;
+      }
+      if (stats.sortino_ratio !== undefined) {
+        html += `<tr><td>Sortino Ratio${createTermInfoButton('sortino_ratio')}</td><td>${stats.sortino_ratio.toFixed(2)}</td></tr>`;
+      }
+      if (stats.max_drawdown !== undefined) {
+        html += `<tr><td>Maximum Drawdown${createTermInfoButton('max_drawdown')}</td><td>${(stats.max_drawdown * 100).toFixed(2)}%</td></tr>`;
+      }
+      if (stats.var_95 !== undefined) {
+        html += `<tr><td>95% Value at Risk${createTermInfoButton('var_95')}</td><td>${(stats.var_95 * 100).toFixed(2)}%</td></tr>`;
+      }
+      if (stats.var_99 !== undefined) {
+        html += `<tr><td>99% Value at Risk${createTermInfoButton('var_99')}</td><td>${(stats.var_99 * 100).toFixed(2)}%</td></tr>`;
+      }
+      if (stats.cvar_95 !== undefined) {
+        html += `<tr><td>95% Conditional VaR${createTermInfoButton('cvar_95')}</td><td>${(stats.cvar_95 * 100).toFixed(2)}%</td></tr>`;
+      }
+      if (stats.cvar_99 !== undefined) {
+        html += `<tr><td>99% Conditional VaR${createTermInfoButton('cvar_99')}</td><td>${(stats.cvar_99 * 100).toFixed(2)}%</td></tr>`;
+      }
+      if (stats.information_ratio !== undefined) {
+        html += `<tr><td>Information Ratio${createTermInfoButton('information_ratio')}</td><td>${stats.information_ratio.toFixed(2)}</td></tr>`;
+      }
+      if (stats.calmar_ratio !== undefined) {
+        html += `<tr><td>Calmar Ratio${createTermInfoButton('calmar_ratio')}</td><td>${stats.calmar_ratio.toFixed(2)}</td></tr>`;
+      }
+      if (stats.risk_free_rate !== undefined) {
+        html += `<tr><td>Risk-Free Rate${createTermInfoButton('risk_free_rate')}</td><td>${(stats.risk_free_rate * 100).toFixed(2)}%</td></tr>`;
+      }
       html += '</tbody></table>';
 
-      function matrixToTable(matrix, title) {
+      if (stats.optimal_portfolio) {
+        html += '<h5>Optimal Portfolio Weights' + createTermInfoButton('optimal_portfolio') + '</h5>';
+        html += '<table class="table table-bordered table-striped">';
+        html += '<thead><tr><th>Asset</th><th>Weight</th></tr></thead><tbody>';
+        for (const [asset, weight] of Object.entries(stats.optimal_portfolio.optimal_weights)) {
+          html += `<tr><td>${asset}</td><td>${(weight * 100).toFixed(2)}%</td></tr>`;
+        }
+        html += '</tbody></table>';
+      }
+
+      function matrixToTable(matrix, title, infoKey) {
         let keys = Object.keys(matrix);
-        let tableHtml = `<h5>${title}</h5>`;
+        let tableHtml = `<h5>${title}${createTermInfoButton(infoKey)}</h5>`;
         tableHtml += '<table class="table table-bordered table-striped"><thead><tr><th></th>';
         keys.forEach(function(key) {
           tableHtml += `<th>${key}</th>`;
@@ -145,8 +250,8 @@
         tableHtml += '</tbody></table>';
         return tableHtml;
       }
-      html += matrixToTable(stats.covariance_matrix, "Covariance Matrix");
-      html += matrixToTable(stats.correlation_matrix, "Correlation Matrix");
+      html += matrixToTable(stats.covariance_matrix, "Covariance Matrix", "covariance_matrix");
+      html += matrixToTable(stats.correlation_matrix, "Correlation Matrix", "correlation_matrix");
       return html;
     }
 
@@ -154,11 +259,11 @@
       let html = '<h5>S&P 500 Statistics</h5>';
       html += '<table class="table table-bordered table-striped">';
       html += '<thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
-      html += `<tr><td>Expected Daily Return</td><td>${(stats.expected_daily_return * 100).toFixed(2)}%</td></tr>`;
-      html += `<tr><td>Daily Volatility</td><td>${(stats.volatility_daily * 100).toFixed(2)}%</td></tr>`;
-      html += `<tr><td>Expected Annual Return</td><td>${(stats.expected_annual_return * 100).toFixed(2)}%</td></tr>`;
-      html += `<tr><td>Annual Volatility</td><td>${(stats.annual_volatility * 100).toFixed(2)}%</td></tr>`;
-      html += `<tr><td>Sharpe Ratio</td><td>${stats.sharpe_ratio}</td></tr>`;
+      html += `<tr><td>Expected Daily Return${createTermInfoButton('expected_daily_return')}</td><td>${(stats.expected_daily_return * 100).toFixed(2)}%</td></tr>`;
+      html += `<tr><td>Daily Volatility${createTermInfoButton('volatility_daily')}</td><td>${(stats.volatility_daily * 100).toFixed(2)}%</td></tr>`;
+      html += `<tr><td>Expected Annual Return${createTermInfoButton('expected_annual_return')}</td><td>${(stats.expected_annual_return * 100).toFixed(2)}%</td></tr>`;
+      html += `<tr><td>Annual Volatility${createTermInfoButton('annual_volatility')}</td><td>${(stats.annual_volatility * 100).toFixed(2)}%</td></tr>`;
+      html += `<tr><td>Sharpe Ratio${createTermInfoButton('sharpe_ratio')}</td><td>${stats.sharpe_ratio.toFixed(2)}</td></tr>`;
       html += '</tbody></table>';
       return html;
     }
@@ -167,9 +272,9 @@
       let html = '<h5>Portfolio vs. S&P 500 Comparison</h5>';
       html += '<table class="table table-bordered table-striped">';
       html += '<thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
-      html += `<tr><td>Beta</td><td>${comp.beta}</td></tr>`;
-      html += `<tr><td>Alpha (Daily)</td><td>${(comp.alpha_daily * 100).toFixed(2)}%</td></tr>`;
-      html += `<tr><td>Alpha (Annual)</td><td>${(comp.alpha_annual * 100).toFixed(2)}%</td></tr>`;
+      html += `<tr><td>Beta${createTermInfoButton('beta')}</td><td>${comp.beta.toFixed(2)}</td></tr>`;
+      html += `<tr><td>Alpha (Daily)${createTermInfoButton('alpha')}</td><td>${(comp.alpha_daily * 100).toFixed(2)}%</td></tr>`;
+      html += `<tr><td>Alpha (Annual)${createTermInfoButton('alpha')}</td><td>${(comp.alpha_annual * 100).toFixed(2)}%</td></tr>`;
       html += '</tbody></table>';
       return html;
     }
@@ -194,8 +299,12 @@
         if (data.error) {
           document.getElementById('monteResult').innerHTML = '<p>Error: ' + data.error + '</p>';
         } else {
+          financialTerms = data.financial_terms;
           let img1 = '<h5>Simulation Paths</h5><img src="data:image/png;base64,' + data.plot1 + '" class="img-fluid" />';
           let img2 = '<h5>Mean Path & Best Fit Line</h5><img src="data:image/png;base64,' + data.plot2 + '" class="img-fluid" />';
+          if (data.plot3) {
+            img2 += '<h5>Efficient Frontier' + createTermInfoButton('efficient_frontier') + '</h5><img src="data:image/png;base64,' + data.plot3 + '" class="img-fluid" />';
+          }
           let portStatsHtml = formatPortfolioStats(data.portfolio_stats);
           let indexStatsHtml = formatIndexStats(data.index_stats);
           let compHtml = formatComparison(data.portfolio_comparison);
